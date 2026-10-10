@@ -111,16 +111,18 @@ svg {
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid #17211b;
   border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--accent);
+  background: #17211b;
+  color: #f2f7f3;
   box-shadow: var(--shadow);
 }
 
 .brand-mark svg {
   width: 19px;
   height: 19px;
+  fill: currentColor;
+  stroke: none;
 }
 
 .runtime-status {
