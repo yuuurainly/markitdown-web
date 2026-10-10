@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#17211b" />
+    <meta
+      name="description"
+      content="在浏览器本地把文档转换为 Markdown。"
+    />
+    <title>MarkItDown</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon-192.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./marked.umd.js" defer></script>
+    <script src="./purify.min.js" defer></script>
+    <script src="./pyodide/pyodide.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+              <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+              <path d="M16 13H8" />
+              <path d="M16 17H8" />
+              <path d="M10 9H8" />
+            </svg>
+          </span>
+          <span>MarkItDown</span>
+        </div>
+        <div class="runtime-status" id="runtimeStatus" data-state="loading">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="runtimeStatusLabel">正在准备转换器</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel input-panel" aria-labelledby="inputTitle">
+          <h1 class="panel-title" id="inputTitle">文档转换</h1>
+          <label class="drop-zone" id="dropZone" for="fileInput">
+            <input
+              id="fileInput"
+              type="file"
+              accept=".pdf,.docx,.pptx,.xlsx,.xls,.html,.htm,.csv,.json,.xml,.txt,.md,.markdown,.rst,.tsv,.ipynb,.epub,.msg,.zip"
+            />
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="m17 8-5-5-5 5" />
+                <path d="M12 3v12" />
+              </svg>
+            </span>
+            <span class="drop-title">拖入文件</span>
+            <span class="drop-subtitle">或点击选择文件</span>
+            <span class="drop-formats">
+              PDF · Word · PowerPoint · Excel · HTML · CSV · JSON · XML · EPUB · ZIP
+            </span>
+          </label>
+          <div class="input-actions">
+            <button class="button button-primary" id="chooseButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="m17 8-5-5-5 5" />
+                <path d="M12 3v12" />
+              </svg>
+              选择文件
+            </button>
+            <button class="button button-ghost" id="resetButton" type="button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+              清空
+            </button>
+          </div>
+        </section>
+
+        <section class="panel output-panel" aria-live="polite">
+          <div class="loading-state" id="loadingState" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <p>正在转换…</p>
+          </div>
+
+          <div class="empty-state" id="emptyState">
+            <span class="empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                <path d="M16 13H8" />
+                <path d="M16 17H8" />
+                <path d="M10 9H8" />
+              </svg>
+            </span>
+            <p>转换结果会显示在这里</p>
+          </div>
+
+          <div class="error-state" id="errorState" hidden>
+            <span class="error-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v5" />
+                <path d="M12 16h.01" />
+              </svg>
+            </span>
+            <p id="errorMessage"></p>
+            <button class="button button-ghost" id="retryButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              重新选择
+            </button>
+          </div>
+
+          <div class="result-view" id="resultView" hidden>
+            <div class="result-header">
+              <div class="file-meta">
+                <span class="file-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
+                    <path d="M10 9H8" />
+                  </svg>
+                </span>
+                <div class="file-copy">
+                  <strong id="resultFileName"></strong>
+                  <span id="resultFileInfo"></span>
+                </div>
+              </div>
+              <div class="result-actions">
+                <button class="icon-button" id="copyButton" type="button" title="复制 Markdown">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                  <span>复制</span>
+                </button>
+                <button class="icon-button" id="downloadButton" type="button" title="下载 Markdown 文件">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <path d="m7 10 5 5 5-5" />
+                    <path d="M12 15V3" />
+                  </svg>
+                  <span>下载 .md</span>
+                </button>
+                <button class="icon-button" id="newFileButton" type="button" title="继续转换">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  <span>继续转换</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="result-tabs" role="tablist" aria-label="结果视图">
+              <button
+                class="tab-button is-active"
+                id="previewTab"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                data-view="preview"
+              >
+                预览
+              </button>
+              <button
+                class="tab-button"
+                id="markdownTab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                data-view="markdown"
+              >
+                Markdown
+              </button>
+            </div>
+
+            <div class="result-body">
+              <div class="markdown-preview" id="previewView"></div>
+              <textarea
+                class="markdown-output"
+                id="markdownView"
+                spellcheck="false"
+                hidden
+              ></textarea>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <noscript>此应用需要启用 JavaScript。</noscript>
+  </body>
+</html>
